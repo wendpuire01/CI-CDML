@@ -1,0 +1,28 @@
+name: ml-ci
+
+on:
+  push:                      # se déclenche à chaque push, sur toutes les branches
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip         # réutilise les paquets d'un run à l'autre
+      - run: pip install -r requirements.txt
+      - name: Tests des données
+        run: pytest tests/test_data.py -v
+      - name: Tests du modèle
+        run: pytest tests/test_model.py -v
+
+  docker:
+    needs: test              # ne démarre que si le job test est vert
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Construire l'image
+        run: docker build -t ml-api:${{ github.sha }} .
